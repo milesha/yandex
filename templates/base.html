@@ -11,7 +11,7 @@
       <nav class="navbar navbar-light bg-light">
         <a class="navbar-brand" href="{{ url_for('index') }}">Компания ...</a>
         {% if "username" in session %}
-            <p>{{ session['username'] }}</p>
+            <h1>{{ username }}</h1>
         {% endif %}
       </nav>
     </header>

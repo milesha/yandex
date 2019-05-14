@@ -73,7 +73,7 @@ def create_admin(s):
     user.is_admin = 1
     db.session.commit()
     return redirect('/index')
-    #Worker.query.filter_by(username=s).delete()
+    # Worker.query.filter_by(username=s).delete()
 
 
 @app.route('/add_solutions', methods=['GET', 'POST'])
@@ -116,7 +116,6 @@ def change_solutions():
         else:
             content = form.content.data
             date, author = form.date.data, form.author.data
-            print(session)
             attempt = Tasks(tasktext=title,
                             description=content,
                             date=date,
@@ -130,6 +129,31 @@ def change_solutions():
                            form=form, username=session['username'])
 
 
+class ChangeTaskForm(FlaskForm):
+    new_users = StringField('Введите пользователей через запятую', validators=[DataRequired()])
+    submit = SubmitField('Отправить')
+
+
+@app.route('/change_task_user/<int:id>', methods=['GET', 'POST'])
+def change_task_user(id):
+    form = ChangeTaskForm()
+    if form.validate_on_submit():
+        new_users = form.new_users.data.split(', ')
+        print (new_users)
+        for i in new_users:
+            user = Worker.query.filter_by(username=i).first()
+            print (user)
+            if user:
+                task = Tasks.query.filter_by(id=id).first()
+                print (task)
+                task.worker_id = user.id
+                print (task.worker_id)
+                db.session.commit()
+        return redirect('/')
+    return render_template('change_task_user.html', title='Создание задачи',
+                           form=form, username=session['username'])
+
+
 @app.route('/')
 @app.route('/index', methods=['GET', 'POST'])
 def index():
@@ -140,12 +164,12 @@ def index():
                 is_admin = i.is_admin
         if is_admin:
             users_list = []
-            print(Worker.query.all())
             for i in Worker.query.all():
                 users_list.append(list(str(i).replace('>', '').split()))
             return render_template('admin.html', users=users_list)
-        return render_template('index.html', username=session['username'], session=session)
-    return render_template('index.html', session='')
+        tasks = Tasks.query.filter_by(worker_id=int(session['user_id']))
+        return render_template('index.html', username=session['username'], session=session, tasks=tasks)
+    return render_template('index.html', session=session)
 
 
 class RegistrationForm(FlaskForm):

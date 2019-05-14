@@ -1,14 +1,26 @@
 {% extends "base.html" %}
- 
+
 {% block content %}
+    {% if "username" in session %}
     <h1>Привет, {{ username }}!</h1>
     <a href="/add_solutions">Добавить задачу</a>
-            {% for item in solutions %}
+<br>
+    <a href="/change_solutions">Редактировать задачу</a>
+<br>
+            {% for item in tasks %}
                 <div class="alert alert-dark" role="alert">
-                    <h2>{{item[1]}}</h2>
-                    <div>{{item[2]}}</div>
-                    <h2>Статус: {{item[3]}}</h2>
+                    <h2>{{item.tasktext }}</h2>
+                    <h3>Описание: {{ item.description }}</h3>
+                    <h3>Дата выполнения: {{ item.date }}</h3>
+                    <h3>Статус: {{ item.status }}</h3>
+                <a href="/change_solutions"><button class="btn btn-primary">Редактировать</button></a>
+                <a href="/change_task_user/{{item.id}}"><button class="btn btn-primary">Делегировать задачу</button></a>
                 </div>
             {% endfor %}
     <a href="/logout"><button type="submit" class="btn btn-primary">Выйти</button></a>
+    {% else %}
+    <h3>Необходимо авторизоваться для отображения задач</h3>
+    <a href="/login"><button type="submit" class="btn btn-primary">Авторизация</button></a>
+    <a href="/register"><button type="submit" class="btn btn-primary">Регистрация</button></a>
+{% endif %}
 {% endblock %}
