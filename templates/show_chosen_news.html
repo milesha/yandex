@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="alert alert-dark" role="alert">
+    <h2>{{item[1]}}</h2>
+    <h2>{{item[2]}}</h2>
+    <a data-method='delete' href="/delete_news/{{item[0]}}">
+        <button type="submit" class="btn btn-primary">Удалить новость</button>
+    </a>
+</div>
+<a href="/news">
+    <button type="submit" class="btn btn-primary">Вернуться к списку новостей</button>
+</a>
+{% endblock %}

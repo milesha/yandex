@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+ 
+{% block content %}
+    <h1>Здравствуйте, наш бог!</h1>
+    <h2>Список ваших рабов:</h2>
+            {% for item in users %}
+                    {% if item[1] != "kirill" or item[2] != "slezin" %}
+                        <div class="alert alert-dark" role="alert">
+                            <h2>{{item[1]}} {{item[2]}}</h2>
+                        </div>
+                    {% endif %}
+            {% endfor %}
+{% endblock %}

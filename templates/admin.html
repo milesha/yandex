@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+ 
+{% block content %}
+    <h1>Здравствуйте, наш бог!</h1>
+    <h2>Список ваших рабов:</h2>
+            {% for item in users %}
+                    {% if item[1] != "kirill" or item[2] != "slezin" %}
+                        <div class="alert alert-primary" role="alert">
+                            <h3>{{item[1]}} {{item[2]}} {{item[3]}} {{item[4]}}</h3>
+                        </div>
+                        <h2>Решения пользователя:</h2>
+                        {% for new in news %}
+
+                            {% if new[0] == item[1] %}
+                                <div class="alert alert-dark" role="alert">
+                                    <h3>{{new[1]}} </h3>
+                                    <h3>{{new[2]}} </h3>
+                                    <h3>{{new[3]}} </h3>
+                                </div>
+                                <a href="/change_status_wrong/{{new[4]}}"><button type="submit" class="btn btn-primary">Неверное решение</button></a>
+                                <a href="/change_status_ok/{{new[4]}}"><button type="submit" class="btn btn-primary">Верное решение</button></a>
+                                <br><br>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+            {% endfor %}
+    <a href="/logout"><button type="submit" class="btn btn-primary">Выйти</button></a>
+{% endblock %}
