@@ -2,6 +2,15 @@
 
 {% block content %}
     <h1>Регистрация</h1>
+    {% with messages = get_flashed_messages() %}
+{% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
         <p>
@@ -41,18 +50,18 @@
             {% endfor %}
         </p>
         <p>
-            {{ form.group.label }}<br>
-            {{ form.group }}<br>
-            {% for error in form.group.errors %}
+            {{ form.password.label }}<br>
+            {{ form.password }}<br>
+            {% for error in form.password.errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>
             {% endfor %}
         </p>
         <p>
-            {{ form.year.label }}<br>
-            {{ form.year }}<br>
-            {% for error in form.year.errors %}
+            {{ form.password2.label }}<br>
+            {{ form.password2 }}<br>
+            {% for error in form.password2.errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>

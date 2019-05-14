@@ -1,6 +1,6 @@
-from flask import redirect, render_template, Flask, request
+from flask import redirect, render_template, Flask, request, flash
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField
+from wtforms import StringField, SubmitField, TextAreaField, PasswordField
 from flask_sqlalchemy import SQLAlchemy
 from wtforms.validators import DataRequired
 
@@ -11,34 +11,34 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-class YandexLyceumStudent(db.Model):
+class Worker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     name = db.Column(db.String(80), unique=False, nullable=False)
     surname = db.Column(db.String(80), unique=False, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    group = db.Column(db.String(80), unique=False, nullable=False)
-    year = db.Column(db.Integer, unique=False, nullable=False)
+    password = db.Column(db.String(80), unique=False, nullable=False)
 
     def __repr__(self):
-        return '<YandexLyceumStudent {} {} {} {}>'.format(
+        return '<Worker {} {} {} {}>'.format(
             self.id, self.username, self.name, self.surname)
 
 
-class SolutionAttempt(db.Model):
+class Tasks(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    task = db.Column(db.String(80), unique=False, nullable=False)
-    code = db.Column(db.String(1000), unique=False, nullable=False)
+    tasktext = db.Column(db.String(80), unique=False, nullable=False)
+    description = db.Column(db.String(1000), unique=False, nullable=False)
     status = db.Column(db.String(50), unique=False, nullable=False)
-    student_id = db.Column(db.Integer,
-                           db.ForeignKey('yandex_lyceum_student.id'),
-                           nullable=False)
-    student = db.relationship('YandexLyceumStudent',
-                              backref=db.backref('SolutionAttempts',
-                                                 lazy=True))
+    worker_id = db.Column(db.Integer,
+                          db.ForeignKey('worker.id'),
+                          nullable=False)
+    worker = db.relationship('Worker',
+                             backref=db.backref('SolutionAttempts',
+                                                lazy=True))
 
     def __repr__(self):
-        return '{}%504);{}%504);{}%504);{}%504);{}'.format(self.student_id, self.task, self.code, self.status, self.id)
+        return '{}%504);{}%504);{}%504);{}%504);{}'.format(self.worker_id, self.tasktext, self.description, self.status,
+                                                           self.id)
 
 
 db.create_all()
@@ -52,68 +52,16 @@ class AddSolutionsForm(FlaskForm):
     submit = SubmitField('Отправить')
 
 
-@app.route('/change_status_wrong/<n>', methods=['GET', 'POST'])
-def change_status_wrong(n):
-    print(n)
-    q = db.session.query(SolutionAttempt)
-    q = q.filter(SolutionAttempt.id == int(n))
-    print(q, q.all())
-    record = q.first()
-    print(record, q.all())
-    record.status = 'WA'
-    db.session.commit()
-    return redirect('/')
-
-
-@app.route('/change_status_ok/<n>', methods=['GET', 'POST'])
-def change_status_ok(n):
-    print(n)
-    q = db.session.query(SolutionAttempt)
-    q = q.filter(SolutionAttempt.id == int(n))
-    print(q, q.all())
-    record = q.first()
-    print(record, q.all())
-    record.status = 'OK'
-    db.session.commit()
-    return redirect('/')
-
-
-@app.route('/add_solutions', methods=['GET', 'POST'])
-def add_solutions():
-    if 'username' not in session:
-        return redirect('/login')
-    form = AddSolutionsForm()
-    if form.validate_on_submit():
-        title = form.title.data
-        content = form.content.data
-        print(session)
-        user = YandexLyceumStudent.query.filter_by(username=session['username']).first()
-        attempt = SolutionAttempt(task=title,
-                                  code=content,
-                                  status='На проверке')
-        user.SolutionAttempts.append(attempt)
-        db.session.commit()
-        return redirect("/index")
-    return render_template('add_solutions.html', title='Отправка решения',
-                           form=form, username=session['username'])
-
-
 @app.route('/')
 @app.route('/index', methods=['GET', 'POST'])
 def index():
     if 'username' not in session:
         return redirect('/login')
-    all_solves = SolutionAttempt.query.filter_by(student_id=session['user_id']).all()
-    solutions = []
-    print(all_solves)
-    for i in all_solves:
-        solutions.append(list(str(i).split('%504);')))
-    print(session, solutions, all_solves)
     if 0 == session['user_id']:
         # return 'admin'
         users_list = []
-        print(YandexLyceumStudent.query.all())
-        for i in YandexLyceumStudent.query.all():
+        print(Worker.query.all())
+        for i in Worker.query.all():
             users_list.append(list(str(i).replace('>', '').split()))
             # users_list[-1][1] = int(users_list[-1][1])
         print(users_list)
@@ -125,15 +73,7 @@ def index():
         return render_template('admin.html', username=session['username'],
                                users=users_list, news=solutions_list)
     else:
-        return render_template('index.html', username=session['username'],
-                               solutions=solutions)
-
-
-@app.route('/logout')
-def logout():
-    session.pop('username', 0)
-    session.pop('user_id', 0)
-    return redirect('/login')
+        return render_template('index.html', username=session['username'])
 
 
 class RegistrationForm(FlaskForm):
@@ -141,24 +81,31 @@ class RegistrationForm(FlaskForm):
     mail = StringField('Почта', validators=[DataRequired()])
     name = StringField('Имя', validators=[DataRequired()])
     surname = StringField('Фамилия', validators=[DataRequired()])
-    group = StringField('Город и школа', validators=[DataRequired()])
-    year = StringField('Год обучения', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    password2 = PasswordField('Повторите пароль', validators=[DataRequired()])
     submit = SubmitField('Зарегистрироваться')
 
 
-@app.route('/registration', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def registration():
     form = RegistrationForm()
     if request.method == 'POST':
-        user = YandexLyceumStudent(username=form.username.data,
-                                   email=form.mail.data,
-                                   name=form.name.data,
-                                   surname=form.surname.data,
-                                   group=form.group.data,
-                                   year=int(form.year.data))
-        db.session.add(user)
-        db.session.commit()
-        return redirect("/index")
+        user = Worker(username=form.username.data,
+                      email=form.mail.data,
+                      name=form.name.data,
+                      surname=form.surname.data,
+                      password=form.password.data)
+        if form.username.data in [i.username for i in Worker.query.all()]:
+            flash('Пользователь с таким логином уже существует')
+        elif form.password.data != form.password2.data:
+            flash('Пароли не совпадают')
+        else:
+            try:
+                db.session.add(user)
+                db.session.commit()
+                return render_template('successful_reg.html', title='Вы успешно зарегистрировались')
+            except:
+                flash('Пользователь с таким email существует')
     return render_template('registration.html', title='Регистрация', form=form)
 
 
@@ -181,9 +128,9 @@ def login():
         name = form.name.data
         surname = form.surname.data
         exists = [False, ]
-        find_person = YandexLyceumStudent.query.filter_by(username=username, name=name, surname=surname).first()
+        find_person = Worker.query.filter_by(username=username).first()
         if find_person:
-            exists = [True, int(str(find_person).split()[1])]
+            exists = [True, int(find_person.id)]
         elif name == 'kirill' and surname == 'slezin' and username == 'kirill':
             exists = [True, 0]
 
