@@ -28,7 +28,8 @@ class Tasks(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tasktext = db.Column(db.String(80), unique=False, nullable=False)
     description = db.Column(db.String(1000), unique=False, nullable=False)
-    status = db.Column(db.String(50), unique=False, nullable=False)
+    date = db.Column(db.String(1000), unique=False, nullable=False)
+    status = db.Column(db.Integer, unique=False, nullable=False)
     worker_id = db.Column(db.Integer,
                           db.ForeignKey('worker.id'),
                           nullable=False)
@@ -47,9 +48,31 @@ users = []
 
 
 class AddSolutionsForm(FlaskForm):
-    title = StringField('Номер или название задачи', validators=[DataRequired()])
-    content = TextAreaField('Ваше решение', validators=[DataRequired()])
+    title = StringField('Название задачи', validators=[DataRequired()])
+    content = TextAreaField('Описание', validators=[DataRequired()])
+    date = StringField('Дата выполнения', validators=[DataRequired()])
+    author = StringField('Автор задачи', validators=[DataRequired()])
     submit = SubmitField('Отправить')
+
+
+@app.route('/add_solutions', methods=['GET', 'POST'])
+def add_solutions():
+    if 'username' not in session:
+        return redirect('/login')
+    form = AddSolutionsForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+        print(session)
+        user = Worker.query.filter_by(username=session['username']).first()
+        attempt = Tasks(task=title,
+                        code=content,
+                        status='На проверке')
+        user.SolutionAttempts.append(attempt)
+        db.session.commit()
+        return redirect("/index")
+    return render_template('add_solutions.html', title='Отправка решения',
+                           form=form, username=session['username'])
 
 
 @app.route('/')
@@ -57,23 +80,7 @@ class AddSolutionsForm(FlaskForm):
 def index():
     if 'username' not in session:
         return redirect('/login')
-    if 0 == session['user_id']:
-        # return 'admin'
-        users_list = []
-        print(Worker.query.all())
-        for i in Worker.query.all():
-            users_list.append(list(str(i).replace('>', '').split()))
-            # users_list[-1][1] = int(users_list[-1][1])
-        print(users_list)
-        solutions_list = []
-        print(SolutionAttempt.query.all())
-        for i in SolutionAttempt.query.all():
-            solutions_list.append(list(str(i).split("%504);")))
-        print(solutions_list)
-        return render_template('admin.html', username=session['username'],
-                               users=users_list, news=solutions_list)
-    else:
-        return render_template('index.html', username=session['username'])
+    return render_template('index.html', username=session['username'])
 
 
 class RegistrationForm(FlaskForm):
@@ -111,34 +118,42 @@ def registration():
 
 class LoginForm(FlaskForm):
     username = StringField('Логин', validators=[DataRequired()])
-    name = StringField('Имя', validators=[DataRequired()])
-    surname = StringField('Фамилия', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
     submit = SubmitField('Войти')
 
 
 d = []
-admin_name, admin_pass, user_id = 'kirill', 'slezin', 0
+
+
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    global session
+    session = {}
+    return redirect('/index')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if 'username' in session:
+        return redirect('/index')
+    print (session)
     form = LoginForm()
     if request.method == 'POST':
         username = form.username.data
-        name = form.name.data
-        surname = form.surname.data
+        password = form.password.data
         exists = [False, ]
         find_person = Worker.query.filter_by(username=username).first()
         if find_person:
-            exists = [True, int(find_person.id)]
-        elif name == 'kirill' and surname == 'slezin' and username == 'kirill':
-            exists = [True, 0]
-
+            if find_person.password == password:
+                exists = [True, int(find_person.id)]
+            else:
+                flash('Неправильный пароль')
+                return render_template('login.html', title='Авторизация', form=form)
         if exists[0]:
             session['username'] = username
             session['user_id'] = exists[1]
             return redirect("/index")
-        return 'Данного пользователя не существует'
+        flash('Данного пользователя не существует')
     return render_template('login.html', title='Авторизация', form=form)
 
 

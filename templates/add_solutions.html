@@ -22,6 +22,24 @@
                 </div>
             {% endfor %}
         </p>
+        <p>
+            {{ form.date.label }}<br>
+            {{ form.date }}<br>
+            {% for error in form.date.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.author.label }}<br>
+            {{ form.author }}<br>
+            {% for error in form.author.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
         <p>{{ form.submit() }}</p>
     </form>
 {% endblock %}

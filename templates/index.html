@@ -2,7 +2,7 @@
  
 {% block content %}
     <h1>Привет, {{ username }}!</h1>
-    <a href="/add_solutions">Отправить решение</a>
+    <a href="/add_solutions">Добавить задачу</a>
             {% for item in solutions %}
                 <div class="alert alert-dark" role="alert">
                     <h2>{{item[1]}}</h2>

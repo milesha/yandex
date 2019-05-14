@@ -9,9 +9,9 @@
   <body>
     <header>
       <nav class="navbar navbar-light bg-light">
-        <a class="navbar-brand" href="#">Компания ...</a>
+        <a class="navbar-brand" href="{{ url_for('index') }}">Компания ...</a>
         {% if "username" in session %}
-            <a class="navbar-brand" href="/logout">{{session['username']}}</a>
+            <p>{{ session['username'] }}</p>
         {% endif %}
       </nav>
     </header>

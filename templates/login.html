@@ -2,6 +2,15 @@
  
 {% block content %}
     <h1>Авторизация</h1>
+    {% with messages = get_flashed_messages() %}
+{% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
         <p>
@@ -14,18 +23,9 @@
             {% endfor %}
         </p>
         <p>
-            {{ form.name.label }}<br>
-            {{ form.name }}<br>
-            {% for error in form.name.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
-                </div>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.surname.label }}<br>
-            {{ form.surname }}<br>
-            {% for error in form.surname.errors %}
+            {{ form.password.label }}<br>
+            {{ form.password }}<br>
+            {% for error in form.password.errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>
