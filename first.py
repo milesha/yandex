@@ -18,10 +18,11 @@ class Worker(db.Model):
     surname = db.Column(db.String(80), unique=False, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
+    is_admin = db.Column(db.Integer)
 
     def __repr__(self):
-        return '<Worker {} {} {} {}>'.format(
-            self.id, self.username, self.name, self.surname)
+        return '<Worker {} {} {} {} {}>'.format(
+            self.id, self.username, self.name, self.surname, self.is_admin)
 
 
 class Tasks(db.Model):
@@ -34,16 +35,27 @@ class Tasks(db.Model):
                           db.ForeignKey('worker.id'),
                           nullable=False)
     worker = db.relationship('Worker',
-                             backref=db.backref('SolutionAttempts',
+                             backref=db.backref('Tasks',
                                                 lazy=True))
 
     def __repr__(self):
-        return '{}%504);{}%504);{}%504);{}%504);{}'.format(self.worker_id, self.tasktext, self.description, self.status,
-                                                           self.id)
+        return 'Tasks {} {} {} {} {}'.format(self.id, self.tasktext, self.description,
+                                             self.date, self.status)
 
 
 db.create_all()
 session = {}
+
+if 'Admin' not in [i.username for i in Worker.query.all()]:
+    user_admin = Worker(username='Admin',
+                        email='Admin@mail.ru',
+                        name='Admin',
+                        surname='Admin',
+                        password='admin',
+                        is_admin=1)
+    db.session.add(user_admin)
+    db.session.commit()
+
 users = []
 
 
@@ -55,6 +67,15 @@ class AddSolutionsForm(FlaskForm):
     submit = SubmitField('Отправить')
 
 
+@app.route('/create_admin/<s>', methods=['GET', 'POST'])
+def create_admin(s):
+    user = Worker.query.filter_by(username=s).first()
+    user.is_admin = 1
+    db.session.commit()
+    return redirect('/index')
+    #Worker.query.filter_by(username=s).delete()
+
+
 @app.route('/add_solutions', methods=['GET', 'POST'])
 def add_solutions():
     if 'username' not in session:
@@ -63,24 +84,68 @@ def add_solutions():
     if form.validate_on_submit():
         title = form.title.data
         content = form.content.data
+        date, author = form.date.data, form.author.data
         print(session)
-        user = Worker.query.filter_by(username=session['username']).first()
-        attempt = Tasks(task=title,
-                        code=content,
-                        status='На проверке')
-        user.SolutionAttempts.append(attempt)
+        attempt = Tasks(tasktext=title,
+                        description=content,
+                        date=date,
+                        status=2,
+                        worker_id=session['user_id'])
+        db.session.add(attempt)
         db.session.commit()
         return redirect("/index")
     return render_template('add_solutions.html', title='Отправка решения',
                            form=form, username=session['username'])
 
 
+@app.route('/change_solutions', methods=['GET', 'POST'])
+def change_solutions():
+    if 'username' not in session:
+        return redirect('/login')
+    form = AddSolutionsForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        u_id = -1
+        for i in Tasks.query.all():
+            if i.tasktext == title:
+                u_id = i.worker_id
+        if u_id == -1:
+            flash('Такой задачи не существует')
+        elif session['user_id'] != u_id:
+            flash('Эта задача не ваша')
+        else:
+            content = form.content.data
+            date, author = form.date.data, form.author.data
+            print(session)
+            attempt = Tasks(tasktext=title,
+                            description=content,
+                            date=date,
+                            status=2,
+                            worker_id=session['user_id'])
+            Tasks.query.filter_by(tasktext=title).delete()
+            db.session.add(attempt)
+            db.session.commit()
+            return redirect("/index")
+    return render_template('add_solutions.html', title='Создание задачи',
+                           form=form, username=session['username'])
+
+
 @app.route('/')
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-    if 'username' not in session:
-        return redirect('/login')
-    return render_template('index.html', username=session['username'])
+    if 'username' in session:
+        is_admin = 0
+        for i in Worker.query.all():
+            if i.username == session['username']:
+                is_admin = i.is_admin
+        if is_admin:
+            users_list = []
+            print(Worker.query.all())
+            for i in Worker.query.all():
+                users_list.append(list(str(i).replace('>', '').split()))
+            return render_template('admin.html', users=users_list)
+        return render_template('index.html', username=session['username'], session=session)
+    return render_template('index.html', session='')
 
 
 class RegistrationForm(FlaskForm):
@@ -101,7 +166,8 @@ def registration():
                       email=form.mail.data,
                       name=form.name.data,
                       surname=form.surname.data,
-                      password=form.password.data)
+                      password=form.password.data,
+                      is_admin=0)
         if form.username.data in [i.username for i in Worker.query.all()]:
             flash('Пользователь с таким логином уже существует')
         elif form.password.data != form.password2.data:
